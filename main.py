@@ -1,9 +1,5 @@
-import os
 from tkinter import *
 from tkinter import messagebox
-
-
-def clear(): os.system('clear')
 
 
 step = False
@@ -34,7 +30,6 @@ class Application(Frame):
         return alive
 
     def updateGrid(self):
-        clear()
         create = []
         delete = []
         for x in range(len(self.grid)):
@@ -49,7 +44,6 @@ class Application(Frame):
                     else:
                         delete.append([x, y])
 
-        print("Create: {}\nDelete: {}".format(create, delete))
         for c in range(len(create)):
             cx, cy = create[c][0], create[c][1]
             self.grid[cy][cx] = self.display.create_rectangle(cx * width, cy * height, (cx + 1) * width,
@@ -105,7 +99,6 @@ class Application(Frame):
     def longUpdateGrid(self):
         global step, DELAY
         if step:
-            print("should be updating")
             self.updateGrid()
         self.after(int(DELAY.get()), self.longUpdateGrid)
 
@@ -138,19 +131,22 @@ class InitApplication(Frame):
         self.bSubmit = Button(self, text="Submit", command=self.check)
         self.bSubmit.grid(row=2, column=1, sticky="E")
 
-    def check(self, event):
+    def check(self):
         try:
             int(x.get()); int(y.get()); int(DELAY.get())
             self.master.destroy()
         except ValueError:
             messagebox.showerror('Value Error', 'All values must be Numbers')
 
+    def enterCheck(self, event):
+        self.check()
+
 
 x, y, DELAY = 0, 0, 0
 
 temp = Tk()
 initapp = InitApplication(master=temp)
-temp.bind('<Return>', initapp.check)
+temp.bind('<Return>', initapp.enterCheck)
 initapp.mainloop()
 
 root = Tk()
