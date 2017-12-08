@@ -4,16 +4,19 @@ from tkinter import messagebox
 
 step = False
 
-
+# Enter to start / Stop
 class Application(Frame):
 
     width = 0
     height = 0
+    mx, my = 0, 0
 
     def __init__(self,x, y, master=None):
         super().__init__(master)
+        self.master.attributes("-fullscreen", True)
         self.x = x
         self.y = y
+        self.mHold = False
         self.grid = [[None for y in range(y)] for x in range(x)]
         self.pack()
         self.createWidgets()
@@ -53,6 +56,7 @@ class Application(Frame):
             self.display.delete(self.grid[dy][dx])
             self.grid[dy][dx] = None
 
+
     def createWidgets(self):
         self.bParent = Frame(self).pack(side="bottom")
 
@@ -73,13 +77,13 @@ class Application(Frame):
                               background='white')
         self.display.pack(side="top")
 
-    def canvasUpdate(self, event):
-        global width, height, x, y
+    def canvasUpdate(self):
+        global width, height, x, y, mx, my
         width = self.display.winfo_width() / self.x
         height = self.display.winfo_width() / self.y
 
-        x = event.x // width
-        y = event.y // height
+        x = mx // width
+        y = my // height
         x, y = int(x), int(y)
 
         if not self.grid[y][x]:
@@ -96,11 +100,26 @@ class Application(Frame):
         else:
             self.bSwitch["text"] = "Stop"
 
+    def buSwitch(self, event):
+        self.switch()
+
     def longUpdateGrid(self):
         global step, DELAY
         if step:
             self.updateGrid()
         self.after(int(DELAY.get()), self.longUpdateGrid)
+
+    def mUpdate(self):
+        if self.mHold:
+            self.canvasUpdate()
+        app.after(75, self.mUpdate)
+
+    def mSwitch(self, event):
+        self.mHold = not self.mHold
+
+    def mGetPos(self, event):
+        global mx, my
+        mx, my = event.x, event.y
 
     def clear(self):
         for y in range(len(self.grid)):
@@ -117,23 +136,22 @@ class InitApplication(Frame):
         self.createWidgets()
 
     def createWidgets(self):
-        global x, y, DELAY
-        x, y, DELAY = StringVar(), StringVar(), StringVar()
-        self.xLabel = Label(self, text="X:").grid(row=0)
-        self.fieldX = Entry(self, textvariable=x).grid(row=0, column=1)
-
-        self.yLabel = Label(self, text="Y:").grid(row=1)
-        self.fieldY = Entry(self, textvariable=y).grid(row=1, column=1)
+        global SIZE, DELAY
+        SIZE, DELAY = StringVar(), StringVar()
+        self.gLabel = Label(self, text="Grid:").grid(row=0)
+        self.fieldG = Entry(self, textvariable=SIZE).grid(row=0, column=1)
+        SIZE.set(100)
 
         self.dLabel = Label(self, text="Delay:").grid(row=2)
         self.fieldD = Entry(self, textvariable=DELAY).grid(row=2, column=1)
+        DELAY.set(50)
 
         self.bSubmit = Button(self, text="Submit", command=self.check)
         self.bSubmit.grid(row=2, column=1, sticky="E")
 
     def check(self):
         try:
-            int(x.get()); int(y.get()); int(DELAY.get())
+            int(SIZE.get()); int(DELAY.get())
             self.master.destroy()
         except ValueError:
             messagebox.showerror('Value Error', 'All values must be Numbers')
@@ -142,7 +160,7 @@ class InitApplication(Frame):
         self.check()
 
 
-x, y, DELAY = 0, 0, 0
+SIZE, DELAY = 0, 0
 
 temp = Tk()
 initapp = InitApplication(master=temp)
@@ -150,7 +168,11 @@ temp.bind('<Return>', initapp.enterCheck)
 initapp.mainloop()
 
 root = Tk()
-app = Application(int(x.get()), int(y.get()), master=root)
-app.display.bind("<Button-1>", app.canvasUpdate)
+app = Application(int(SIZE.get()), int(SIZE.get()), master=root)
+app.master.bind("<Return>", app.buSwitch)
+app.display.bind("<Motion>", app.mGetPos)
+app.display.bind("<Button-1>", app.mSwitch)
+app.display.bind("<ButtonRelease-1>", app.mSwitch)
+app.after(10, app.mUpdate)
 app.after(int(DELAY.get()), app.longUpdateGrid)
 app.mainloop()
