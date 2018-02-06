@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
+import random
 
 
 step = False
@@ -32,29 +33,34 @@ class Application(Frame):
                     alive += 1
         return alive
 
-    def updateGrid(self):
-        create = []
-        delete = []
-        for x in range(len(self.grid)):
-            for y in range(len(self.grid[x])):
-                alive = self.roundCheck(x, y)
-                if not self.grid[y][x]:
-                    if alive == 3:
-                        create.append([x, y])
-                else:
-                    if alive == 2 or alive == 3:
-                        pass
+    def updateGrid(self, create=None, delete=None):
+        if not delete and not create:
+            create = []
+            delete = []
+            for x in range(len(self.grid)):
+                for y in range(len(self.grid[x])):
+                    alive = self.roundCheck(x, y)
+                    if not self.grid[y][x]:
+                        if alive == 3:
+                            create.append([x, y])
                     else:
-                        delete.append([x, y])
+                        if alive in [2, 3]:
+                            pass
+                        else:
+                            delete.append([x, y])
 
         for c in range(len(create)):
             cx, cy = create[c][0], create[c][1]
-            self.grid[cy][cx] = self.display.create_rectangle(cx * width, cy * height, (cx + 1) * width,
-                                                            (cy + 1) * height, fill="black")
-        for d in range(len(delete)):
-            dx, dy = delete[d][0], delete[d][1]
-            self.display.delete(self.grid[dy][dx])
-            self.grid[dy][dx] = None
+            self.grid[cy][cx] = self.display.create_rectangle(cx * width, cy * height, (cx + 1) * width, (cy + 1) *
+                                                              height, fill="black")
+        try:
+            for d in range(len(delete)):
+                dx, dy = delete[d][0], delete[d][1]
+                self.display.delete(self.grid[dy][dx])
+                self.grid[dy][dx] = None
+        except TypeError:
+            pass
+            # Nothing to delete
 
 
     def createWidgets(self):
@@ -69,6 +75,8 @@ class Application(Frame):
         self.bClear = Button(self.bParent, text="Clear", command=self.clear)
         self.bClear.pack(side="left")
 
+        Button(self.bParent, text="Generate", command=self.generate).pack(side="left")
+
         self.bExit = Button(self.bParent, text="Quit", fg="red", command=self.master.destroy)
         self.bExit.pack(side="left")
 
@@ -81,6 +89,7 @@ class Application(Frame):
         global width, height, x, y, mx, my
         width = self.display.winfo_width() / self.x
         height = self.display.winfo_width() / self.y
+
 
         x = mx // width
         y = my // height
@@ -127,6 +136,30 @@ class Application(Frame):
                 self.display.delete(self.grid[y][x])
                 self.grid[y][x] = None
 
+    def generate(self):
+        density = IntVar()
+        self.toplevel = Toplevel()
+        self.toplevel.title("Generate Settings")
+        data = [("Low", 10), ("Medium", 30), ("High", 50)]
+        for d in data:
+            r = Radiobutton(self.toplevel, text=d[0], variable=density, value=d[1])
+            r.pack(side="left")
+        Button(self.toplevel, text="Submit", command=lambda: self.genSubmit(density.get())).pack(side="bottom")
+
+    def genSubmit(self, density):
+        self.toplevel.destroy()
+        self.clear()
+        self.canvasUpdate()
+        create = []
+        requiredPercent = density
+        currentPercent = 0
+        maxcells = len(self.grid)**2
+        while currentPercent < requiredPercent:
+            newCord = [random.randint(0, len(self.grid) - 1), random.randint(0, len(self.grid) - 1)]
+            if newCord not in create:
+                create.append(newCord)
+            currentPercent = len(create) / maxcells * 100
+        self.updateGrid(create=create)
 
 class InitApplication(Frame):
 
